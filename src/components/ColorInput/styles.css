@@ -1,0 +1,60 @@
+.color-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.color-field__label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.color-field__control {
+  display: flex;
+  align-items: center;
+  height: 39px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  transition: border-color 160ms ease;
+}
+
+.color-field__control:focus-within {
+  border-color: rgba(139, 92, 246, 0.48);
+}
+
+.color-swatch {
+  position: relative;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-radius: 7px;
+  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.3);
+}
+
+.color-swatch input {
+  position: absolute;
+  inset: -8px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.hex-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 0 8px;
+  border: 0;
+  outline: 0 !important;
+  color: #d8d8e0;
+  background: transparent;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+}

@@ -1,0 +1,85 @@
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 49px;
+  padding: 7px 10px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+
+.editor-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.heading-select,
+.toolbar-select {
+  width: 83px;
+  min-width: 83px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted-strong);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+.toolbar-select {
+  width: 61px;
+  min-width: 61px;
+  padding: 0 6px;
+}
+
+.font-select {
+  width: 66px;
+  min-width: 66px;
+}
+
+
+.heading-select:hover,
+.heading-select:focus,
+.toolbar-select:hover,
+.toolbar-select:focus {
+  color: white;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.heading-select option,
+.toolbar-select option {
+  color: var(--text);
+  background: #1a1a22;
+}
+
+.tool-button {
+  display: inline-grid;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  color: #9494a4;
+  background: transparent;
+  cursor: pointer;
+  transition: 140ms ease;
+}
+
+.tool-button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.tool-button:active {
+  transform: scale(0.93);
+}
+
+.tool-divider {
+  width: 1px;
+  min-width: 1px;
+  height: 20px;
+  margin: 0 5px;
+  background: var(--border);
+}

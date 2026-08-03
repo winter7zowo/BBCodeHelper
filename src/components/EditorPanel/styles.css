@@ -1,0 +1,77 @@
+.editor-card {
+  padding: 18px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.character-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.editor-shell {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(5, 5, 8, 0.44);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.editor-shell:focus-within {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+}
+
+.source-editor {
+  display: block;
+  width: 100%;
+  min-height: 145px;
+  padding: 14px 17px;
+  resize: vertical;
+  border: 0;
+  outline: 0 !important;
+  color: #dddde7;
+  background: transparent;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+}
+
+.source-editor::placeholder {
+  color: #5f5f6b;
+}
+
+@media (max-height: 760px) and (min-width: 1041px) {
+  .source-editor {
+    min-height: 118px;
+  }
+}
+
+@media (max-width: 640px) {
+  .editor-card {
+    padding: 16px;
+  }
+
+  .source-editor {
+    min-height: 165px;
+    padding: 14px;
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,261 @@
+.preview-card {
+  position: sticky;
+  top: 84px;
+  display: flex;
+  height: calc(100vh - 102px);
+  min-height: 540px;
+  max-height: 760px;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px 13px;
+}
+
+.preview-card__head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 9px;
+  color: #c7b9f4;
+  background: rgba(139, 92, 246, 0.1);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  transition: 170ms ease;
+}
+
+.copy-button:hover {
+  color: white;
+  background: rgba(139, 92, 246, 0.18);
+  transform: translateY(-1px);
+}
+
+.copy-button.is-copied {
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #86efc1;
+  background: rgba(52, 211, 153, 0.09);
+}
+
+.preview-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  margin: 0 18px 12px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.preview-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 31px;
+  border: 0;
+  border-radius: 7px;
+  color: #71717f;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  transition: 160ms ease;
+}
+
+.preview-tabs button.is-active {
+  color: #ececf1;
+  background: #272731;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.preview-content {
+  min-height: 0;
+  flex: 1;
+  padding: 0 18px 18px;
+}
+
+.forum-preview,
+.code-output-wrap {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0d0d12;
+}
+
+.forum-post {
+  display: flex;
+  min-height: 100%;
+  padding: 18px;
+}
+
+.forum-post__content {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+.rendered-bbcode {
+  width: 100%;
+  overflow-wrap: anywhere;
+  color: #d4d4dc;
+  font-size: 14px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.rendered-bbcode .bbcode-align {
+  display: block;
+  width: 100%;
+}
+
+.rendered-bbcode h1,
+.rendered-bbcode h2,
+.rendered-bbcode h3 {
+  margin: 0 0 10px;
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.rendered-bbcode h1 {
+  font-size: 24px;
+}
+
+.rendered-bbcode h2 {
+  font-size: 20px;
+}
+
+.rendered-bbcode h3 {
+  font-size: 17px;
+}
+
+.rendered-bbcode blockquote {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 2px solid #7451d5;
+  color: #adadb9;
+  background: rgba(139, 92, 246, 0.055);
+}
+
+.rendered-bbcode a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rendered-bbcode ul,
+.rendered-bbcode ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.rendered-bbcode .bbcode-notice {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  border-left: 3px solid #60a5fa;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.09);
+}
+
+.rendered-bbcode .bbcode-notice__title {
+  display: block;
+  margin-bottom: 4px;
+  color: #f0f0f4;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.rendered-bbcode .bbcode-notice__body {
+  display: block;
+}
+
+.rendered-bbcode .bbcode-notice--success {
+  border-color: rgba(52, 211, 153, 0.25);
+  border-left-color: #34d399;
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.rendered-bbcode .bbcode-notice--warning {
+  border-color: rgba(251, 191, 36, 0.25);
+  border-left-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.rendered-bbcode .bbcode-notice--error {
+  border-color: rgba(248, 113, 113, 0.25);
+  border-left-color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.empty-preview {
+  color: #555561;
+}
+
+.code-output-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b0b0f;
+}
+
+.code-output {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  padding: 15px;
+  resize: none;
+  border: 0;
+  outline: 0 !important;
+  color: #aaaabd;
+  background: transparent;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.75;
+}
+
+@media (max-width: 1040px) {
+  .preview-card {
+    position: relative;
+    top: 0;
+    height: 580px;
+    min-height: 580px;
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .preview-card {
+    height: 520px;
+    min-height: 520px;
+  }
+
+  .preview-card__head {
+    padding: 16px 16px 12px;
+  }
+
+  .preview-tabs {
+    margin: 0 16px 11px;
+  }
+
+  .preview-content {
+    padding: 0 16px 16px;
+  }
+}
