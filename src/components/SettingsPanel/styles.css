@@ -1,0 +1,58 @@
+.settings-rail {
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(40px, env(safe-area-inset-bottom));
+  z-index: 30;
+  width: 38px;
+}
+
+.settings-shortcuts {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 5px);
+  display: grid;
+  gap: 5px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(48px);
+  transition: transform 0.4s ease, opacity 0.3s ease, visibility 0s linear 0.4s;
+}
+
+.settings-shortcuts.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+  transition-delay: 0s;
+}
+
+.settings-rail__button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted-strong);
+  background: var(--surface-soft);
+  box-shadow: 0 2px 8px #0001;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.settings-rail__button:hover,
+.settings-trigger[aria-expanded="true"] {
+  color: var(--text);
+  background: var(--control-hover-background, #454550);
+}
+
+.settings-gear { display: grid; place-items: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-shortcuts,
+  .settings-rail__button { transition: none; }
+}

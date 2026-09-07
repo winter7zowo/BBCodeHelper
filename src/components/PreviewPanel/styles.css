@@ -18,7 +18,7 @@
 
 .preview-card__head h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -27,28 +27,28 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 32px;
+  height: 36px;
   padding: 0 10px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid var(--accent-border, rgba(139, 92, 246, 0.3));
   border-radius: 9px;
-  color: #c7b9f4;
-  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent-text, #c7b9f4);
+  background: var(--accent-soft-background, rgba(139, 92, 246, 0.1));
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   transition: 170ms ease;
 }
 
 .copy-button:hover {
-  color: white;
-  background: rgba(139, 92, 246, 0.18);
+  color: var(--control-hover-text, white);
+  background: var(--accent-hover-background, rgba(139, 92, 246, 0.18));
   transform: translateY(-1px);
 }
 
 .copy-button.is-copied {
-  border-color: rgba(52, 211, 153, 0.3);
-  color: #86efc1;
-  background: rgba(52, 211, 153, 0.09);
+  border-color: var(--success-border, rgba(52, 211, 153, 0.3));
+  color: var(--success-text, #86efc1);
+  background: var(--success-background, rgba(52, 211, 153, 0.09));
 }
 
 .preview-tabs {
@@ -59,7 +59,7 @@
   padding: 3px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--inset-background, rgba(0, 0, 0, 0.2));
 }
 
 .preview-tabs button {
@@ -67,20 +67,20 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  height: 31px;
+  height: 36px;
   border: 0;
   border-radius: 7px;
-  color: #71717f;
+  color: var(--control-text, #71717f);
   background: transparent;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 13px;
   transition: 160ms ease;
 }
 
 .preview-tabs button.is-active {
-  color: #ececf1;
-  background: #272731;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  color: var(--active-text, #ececf1);
+  background: var(--active-background, #272731);
+  box-shadow: var(--active-shadow, 0 3px 10px rgba(0, 0, 0, 0.2));
 }
 
 .preview-content {
@@ -96,7 +96,7 @@
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #0d0d12;
+  background: var(--content-background, #0d0d12);
 }
 
 .forum-post {
@@ -114,8 +114,8 @@
 .rendered-bbcode {
   width: 100%;
   overflow-wrap: anywhere;
-  color: #d4d4dc;
-  font-size: 14px;
+  color: var(--content-text, #d4d4dc);
+  font-size: 16px;
   line-height: 1.8;
   white-space: pre-wrap;
 }
@@ -125,31 +125,19 @@
   width: 100%;
 }
 
-.rendered-bbcode h1,
-.rendered-bbcode h2,
-.rendered-bbcode h3 {
+.rendered-bbcode h2 {
   margin: 0 0 10px;
   line-height: 1.25;
-  letter-spacing: -0.035em;
-}
-
-.rendered-bbcode h1 {
-  font-size: 24px;
-}
-
-.rendered-bbcode h2 {
-  font-size: 20px;
-}
-
-.rendered-bbcode h3 {
-  font-size: 17px;
+  color: #ff66aa;
+  font-size: 1.5em;
+  font-weight: 600;
 }
 
 .rendered-bbcode blockquote {
   margin: 10px 0;
   padding: 8px 12px;
-  border-left: 2px solid #7451d5;
-  color: #adadb9;
+  border-left: 2px solid #ff66aa;
+  color: var(--quote-text, #adadb9);
   background: rgba(139, 92, 246, 0.055);
 }
 
@@ -164,56 +152,27 @@
   padding-left: 20px;
 }
 
+.rendered-bbcode ul { list-style-type: disc; }
+.rendered-bbcode ol { list-style-type: decimal; }
+
 .rendered-bbcode .bbcode-notice {
   display: block;
   width: 100%;
   margin: 8px 0;
   padding: 10px 12px;
-  border: 1px solid rgba(96, 165, 250, 0.24);
-  border-left: 3px solid #60a5fa;
-  border-radius: 8px;
-  background: rgba(59, 130, 246, 0.09);
-}
-
-.rendered-bbcode .bbcode-notice__title {
-  display: block;
-  margin-bottom: 4px;
-  color: #f0f0f4;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.rendered-bbcode .bbcode-notice__body {
-  display: block;
-}
-
-.rendered-bbcode .bbcode-notice--success {
-  border-color: rgba(52, 211, 153, 0.25);
-  border-left-color: #34d399;
-  background: rgba(52, 211, 153, 0.08);
-}
-
-.rendered-bbcode .bbcode-notice--warning {
-  border-color: rgba(251, 191, 36, 0.25);
-  border-left-color: #fbbf24;
-  background: rgba(251, 191, 36, 0.08);
-}
-
-.rendered-bbcode .bbcode-notice--error {
-  border-color: rgba(248, 113, 113, 0.25);
-  border-left-color: #f87171;
-  background: rgba(248, 113, 113, 0.08);
+  border: 2px solid #ff66aa;
+  background: var(--notice-background, rgba(0, 0, 0, 0.3));
 }
 
 .empty-preview {
-  color: #555561;
+  color: var(--placeholder-text, #555561);
 }
 
 .code-output-wrap {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #0b0b0f;
+  background: var(--code-background, #0b0b0f);
 }
 
 .code-output {
@@ -224,10 +183,10 @@
   resize: none;
   border: 0;
   outline: 0 !important;
-  color: #aaaabd;
+  color: var(--code-text, #aaaabd);
   background: transparent;
   font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1.75;
 }
 

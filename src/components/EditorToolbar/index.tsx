@@ -4,6 +4,7 @@ import {
   AlignRight,
   Bold,
   CircleAlert,
+  Heading,
   Italic,
   Link2,
   List,
@@ -12,6 +13,7 @@ import {
   Strikethrough,
   Underline,
 } from 'lucide-react'
+import { usePreferences } from '../../context/PreferencesContext'
 import './styles.css'
 
 export interface FormatAction {
@@ -25,17 +27,17 @@ interface EditorToolbarProps {
 }
 
 const basicTools = [
-  { label: '加粗', icon: Bold, openTag: '[b]', closeTag: '[/b]' },
-  { label: '斜体', icon: Italic, openTag: '[i]', closeTag: '[/i]' },
-  { label: '下划线', icon: Underline, openTag: '[u]', closeTag: '[/u]' },
-  { label: '删除线', icon: Strikethrough, openTag: '[s]', closeTag: '[/s]' },
-]
+  { labelKey: 'bold', icon: Bold, openTag: '[b]', closeTag: '[/b]' },
+  { labelKey: 'italic', icon: Italic, openTag: '[i]', closeTag: '[/i]' },
+  { labelKey: 'underline', icon: Underline, openTag: '[u]', closeTag: '[/u]' },
+  { labelKey: 'strikethrough', icon: Strikethrough, openTag: '[s]', closeTag: '[/s]' },
+] as const
 
 const alignmentTools = [
-  { label: '左对齐', icon: AlignLeft, openTag: '[left]', closeTag: '[/left]' },
-  { label: '居中', icon: AlignCenter, openTag: '[center]', closeTag: '[/center]' },
-  { label: '右对齐', icon: AlignRight, openTag: '[right]', closeTag: '[/right]' },
-]
+  { labelKey: 'alignLeft', icon: AlignLeft, openTag: '[left]', closeTag: '[/left]' },
+  { labelKey: 'alignCenter', icon: AlignCenter, openTag: '[centre]', closeTag: '[/centre]' },
+  { labelKey: 'alignRight', icon: AlignRight, openTag: '[right]', closeTag: '[/right]' },
+] as const
 
 function ToolButton({
   label,
@@ -48,53 +50,23 @@ function ToolButton({
 }) {
   return (
     <button className="tool-button" type="button" aria-label={label} title={label} onClick={onClick}>
-      <Icon size={16} strokeWidth={2} />
+      <Icon size={18} strokeWidth={2} />
     </button>
   )
 }
 
 export function EditorToolbar({ onFormat }: EditorToolbarProps) {
+  const { t } = usePreferences()
   const run = (openTag: string, closeTag: string, placeholder?: string) =>
     onFormat({ openTag, closeTag, placeholder })
 
   return (
-    <div className="editor-toolbar" role="toolbar" aria-label="文字格式">
-      <select
-        className="heading-select"
-        aria-label="标题级别"
-        defaultValue="body"
-        onChange={(event) => {
-          const tag = event.target.value
-          if (tag !== 'body') run(`[${tag}]`, `[/${tag}]`, '标题')
-          event.target.value = 'body'
-        }}
-      >
-        <option value="body">正文</option>
-        <option value="h1">标题 1</option>
-        <option value="h2">标题 2</option>
-        <option value="h3">标题 3</option>
-      </select>
-
-      <select
-        className="toolbar-select font-select"
-        aria-label="字体"
-        defaultValue="font"
-        onChange={(event) => {
-          const font = event.target.value
-          if (font !== 'font') run(`[font=${font}]`, '[/font]')
-          event.target.value = 'font'
-        }}
-      >
-        <option value="font">字体</option>
-        <option value="Arial">Arial</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Courier New">等宽</option>
-        <option value="Microsoft YaHei">雅黑</option>
-      </select>
+    <div className="editor-toolbar" role="toolbar" aria-label={t('textFormatting')}>
+      <ToolButton label={t('heading')} icon={Heading} onClick={() => run('[heading]', '[/heading]', t('heading'))} />
 
       <select
         className="toolbar-select size-select"
-        aria-label="字号"
+        aria-label={t('fontSize')}
         defaultValue="size"
         onChange={(event) => {
           const size = event.target.value
@@ -102,15 +74,15 @@ export function EditorToolbar({ onFormat }: EditorToolbarProps) {
           event.target.value = 'size'
         }}
       >
-        <option value="size">字号</option>
-        {[1, 2, 3, 4, 5, 6, 7].map((size) => <option key={size} value={size}>{size}</option>)}
+        <option value="size">{t('fontSize')}</option>
+        {[50, 85, 100, 150, 200].map((size) => <option key={size} value={size}>{size}%</option>)}
       </select>
 
       <span className="tool-divider" />
       {basicTools.map((tool) => (
         <ToolButton
-          key={tool.label}
-          label={tool.label}
+          key={tool.labelKey}
+          label={t(tool.labelKey)}
           icon={tool.icon}
           onClick={() => run(tool.openTag, tool.closeTag)}
         />
@@ -118,33 +90,33 @@ export function EditorToolbar({ onFormat }: EditorToolbarProps) {
       <span className="tool-divider" />
       {alignmentTools.map((tool) => (
         <ToolButton
-          key={tool.label}
-          label={tool.label}
+          key={tool.labelKey}
+          label={t(tool.labelKey)}
           icon={tool.icon}
           onClick={() => run(tool.openTag, tool.closeTag)}
         />
       ))}
       <span className="tool-divider" />
-      <ToolButton label="引用" icon={Quote} onClick={() => run('[quote]', '[/quote]', '引用内容')} />
+      <ToolButton label={t('quote')} icon={Quote} onClick={() => run('[quote]', '[/quote]', t('quoteContent'))} />
       <ToolButton
-        label="提示框"
+        label={t('notice')}
         icon={CircleAlert}
-        onClick={() => run('[notice]', '[/notice]', '提示内容')}
+        onClick={() => run('[notice]', '[/notice]', t('noticeContent'))}
       />
       <ToolButton
-        label="链接"
+        label={t('link')}
         icon={Link2}
-        onClick={() => run('[url=https://example.com]', '[/url]', '链接文字')}
+        onClick={() => run('[url=https://example.com]', '[/url]', t('linkText'))}
       />
       <ToolButton
-        label="无序列表"
+        label={t('unorderedList')}
         icon={List}
-        onClick={() => run('[list]\n[*]', '[/*]\n[*]项目二[/*]\n[/list]', '项目一')}
+        onClick={() => run('[list]\n[*]', `\n[*]${t('secondListItem')}\n[/list]`, t('firstListItem'))}
       />
       <ToolButton
-        label="有序列表"
+        label={t('orderedList')}
         icon={ListOrdered}
-        onClick={() => run('[list=1]\n[*]', '[/*]\n[*]项目二[/*]\n[/list]', '项目一')}
+        onClick={() => run('[list=1]\n[*]', `\n[*]${t('secondListItem')}\n[/list]`, t('firstListItem'))}
       />
     </div>
   )

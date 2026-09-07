@@ -6,3 +6,22 @@ dist
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# Local environment values (keep shareable templates available)
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.template
+!.env.*.template
+
+# Tool caches, generated reports, and temporary files
+.cache/
+.vite/
+.tmp/
+coverage/
+playwright-report/
+test-results/
+*.tmp
+*.temp
+Thumbs.db

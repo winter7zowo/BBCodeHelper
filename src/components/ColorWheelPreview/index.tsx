@@ -1,257 +1,135 @@
-import { useRef, type PointerEvent } from 'react'
-import { motion } from 'framer-motion'
-import type { GradientConfig } from '../../types/editor'
-import { normalizeHex } from '../../utils/color'
+import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { usePreferences } from '../../context/PreferencesContext'
+import type { GradientStop } from '../../types/editor'
+import { getHsvPoint, hsvToHex, type HsvPoint } from '../../utils/hsv'
+import { useRafCallback } from '../../hooks/useRafCallback'
 import './styles.css'
 
-type ColorStop = 'start' | 'middle' | 'end'
-
 interface ColorWheelPreviewProps {
-  config: GradientConfig
-  onColorChange: (stop: ColorStop, color: string) => void
+  stops: GradientStop[]
+  selectedId: string
+  onSelect: (id: string) => void
+  onColorChange: (id: string, color: string) => void
 }
 
-interface HsvPoint {
-  x: number
-  y: number
-  hue: number
-  saturation: number
-  value: number
-}
+interface ColorDrag { id: string; pointerId: number; kind: 'plane' | 'value'; bounds: DOMRect; point: HsvPoint; moved: boolean }
+interface ColorDraft { id: string; color: string; point: HsvPoint }
 
-function getHsvPoint(hex: string): HsvPoint {
-  const normalized = normalizeHex(hex).slice(1)
-  const red = Number.parseInt(normalized.slice(0, 2), 16) / 255
-  const green = Number.parseInt(normalized.slice(2, 4), 16) / 255
-  const blue = Number.parseInt(normalized.slice(4, 6), 16) / 255
-  const max = Math.max(red, green, blue)
-  const min = Math.min(red, green, blue)
-  const delta = max - min
-  const saturation = max === 0 ? 0 : delta / max
-  let hue = 0
+export function ColorWheelPreview({ stops, selectedId, onSelect, onColorChange }: ColorWheelPreviewProps) {
+  const { t } = usePreferences()
+  const gradientId = useId().replace(/:/g, '')
+  const drag = useRef<ColorDrag | null>(null)
+  // Preserve exact HSV while dragging, including hue/saturation hidden by black or white.
+  const [draft, setDraft] = useState<ColorDraft | null>(null)
+  const points = stops.map((stop) => ({
+    ...stop,
+    point: draft?.id === stop.id && draft.color === stop.color ? draft.point : getHsvPoint(stop.color),
+  }))
+  const selected = points.find((stop) => stop.id === selectedId) ?? points[0]
 
-  if (delta !== 0) {
-    if (max === red) hue = ((green - blue) / delta) % 6
-    else if (max === green) hue = (blue - red) / delta + 2
-    else hue = (red - green) / delta + 4
-    hue *= 60
-    if (hue < 0) hue += 360
+  const commitPoint = (id: string, point: HsvPoint) => {
+    const color = hsvToHex(point.hue, point.saturation, point.value)
+    setDraft({ id, point, color })
+    onColorChange(id, color)
   }
 
-  return {
-    x: (hue / 360) * 100,
-    y: (1 - saturation) * 100,
-    hue,
-    saturation,
-    value: max,
-  }
-}
+  const move = useRafCallback((clientX: number, clientY: number) => {
+    const current = drag.current
+    if (!current) return
+    const { bounds, point } = current
+    const y = Math.min(1, Math.max(0, (clientY - bounds.top) / bounds.height))
+    if (current.kind === 'value') {
+      commitPoint(current.id, { ...point, value: 1 - y })
+    } else {
+      const x = Math.min(1, Math.max(0, (clientX - bounds.left) / bounds.width))
+      commitPoint(current.id, { ...point, x: x * 100, y: y * 100, hue: x * 360, saturation: 1 - y })
+    }
+  })
 
-function hsvToHex(hue: number, saturation: number, value: number): string {
-  const chroma = value * saturation
-  const section = hue / 60
-  const secondary = chroma * (1 - Math.abs((section % 2) - 1))
-  const offset = value - chroma
-  let red = 0
-  let green = 0
-  let blue = 0
-
-  if (section < 1) [red, green, blue] = [chroma, secondary, 0]
-  else if (section < 2) [red, green, blue] = [secondary, chroma, 0]
-  else if (section < 3) [red, green, blue] = [0, chroma, secondary]
-  else if (section < 4) [red, green, blue] = [0, secondary, chroma]
-  else if (section < 5) [red, green, blue] = [secondary, 0, chroma]
-  else [red, green, blue] = [chroma, 0, secondary]
-
-  const channel = (number: number) =>
-    Math.round((number + offset) * 255).toString(16).padStart(2, '0').toUpperCase()
-  return `#${channel(red)}${channel(green)}${channel(blue)}`
-}
-
-function PlaneMarker({
-  point,
-  color,
-  label,
-  onMove,
-}: {
-  point: HsvPoint
-  color: string
-  label: string
-  onMove: (clientX: number, clientY: number) => void
-}) {
-  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+  const startDrag = (event: PointerEvent<HTMLDivElement>, kind: ColorDrag['kind']) => {
+    if (!selected || event.button !== 0 || !event.isPrimary) return
+    event.preventDefault()
+    const target = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-color-id]')
+    const stop = points.find((item) => item.id === target?.dataset.colorId) ?? selected
+    const bounds = event.currentTarget.getBoundingClientRect()
+    if (!bounds.width || !bounds.height) return
+    onSelect(stop.id)
+    target?.focus({ preventScroll: true })
+    drag.current = { id: stop.id, pointerId: event.pointerId, kind, bounds, point: stop.point, moved: !target }
     event.currentTarget.setPointerCapture(event.pointerId)
-    onMove(event.clientX, event.clientY)
+    if (!target) move.schedule(event.clientX, event.clientY)
   }
 
-  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      onMove(event.clientX, event.clientY)
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.pointerId === event.pointerId) {
+      drag.current.moved = true
+      move.schedule(event.clientX, event.clientY)
     }
   }
 
-  return (
-    <motion.button
-      type="button"
-      className="color-space__marker"
-      aria-label={label}
-      animate={{ left: `${point.x}%`, top: `${point.y}%` }}
-      transition={{ type: 'spring', stiffness: 240, damping: 28 }}
-      style={{ backgroundColor: color }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-    />
-  )
-}
-
-function ValueMarker({
-  className,
-  point,
-  color,
-  label,
-  onMove,
-}: {
-  className: string
-  point: HsvPoint
-  color: string
-  label: string
-  onMove: (clientY: number) => void
-}) {
-  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId)
-    onMove(event.clientY)
+  const finishDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.pointerId !== event.pointerId) return
+    // Release can include a newer sample than pointermove; a handle click must not shift its color.
+    if (event.type === 'pointerup' && drag.current.moved) move.schedule(event.clientX, event.clientY)
+    move.flush()
+    drag.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
   }
 
-  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) onMove(event.clientY)
+  const handlePlaneKey = (event: KeyboardEvent<HTMLButtonElement>, id: string, point: HsvPoint) => {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
+    event.preventDefault()
+    const step = event.shiftKey ? 10 : 1
+    const hue = Math.min(360, Math.max(0, point.hue + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0)))
+    const saturation = Math.min(1, Math.max(0, point.saturation + (event.key === 'ArrowUp' ? step / 100 : event.key === 'ArrowDown' ? -step / 100 : 0)))
+    commitPoint(id, { ...point, hue, saturation, x: hue / 360 * 100, y: (1 - saturation) * 100 })
   }
 
   return (
-    <motion.button
-      type="button"
-      className={`value-space__marker ${className}`}
-      aria-label={label}
-      animate={{ top: `${(1 - point.value) * 100}%` }}
-      transition={{ type: 'spring', stiffness: 240, damping: 28 }}
-      style={{ backgroundColor: color }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-    />
-  )
-}
-
-export function ColorWheelPreview({ config, onColorChange }: ColorWheelPreviewProps) {
-  const colorSpaceRef = useRef<HTMLDivElement>(null)
-  const valueSpaceRef = useRef<HTMLDivElement>(null)
-  const start = getHsvPoint(config.start)
-  const middle = getHsvPoint(config.middle)
-  const end = getHsvPoint(config.end)
-  const hasMiddle = config.mode === 'three' || config.mode === 'offset'
-
-  const updatePlane = (stop: ColorStop, point: HsvPoint, clientX: number, clientY: number) => {
-    const bounds = colorSpaceRef.current?.getBoundingClientRect()
-    if (!bounds) return
-    const horizontal = Math.min(0.9999, Math.max(0, (clientX - bounds.left) / bounds.width))
-    const vertical = Math.min(1, Math.max(0, (clientY - bounds.top) / bounds.height))
-    onColorChange(stop, hsvToHex(horizontal * 360, 1 - vertical, point.value))
-  }
-
-  const updateValue = (stop: ColorStop, point: HsvPoint, clientY: number) => {
-    const bounds = valueSpaceRef.current?.getBoundingClientRect()
-    if (!bounds) return
-    const vertical = Math.min(1, Math.max(0, (clientY - bounds.top) / bounds.height))
-    onColorChange(stop, hsvToHex(point.hue, point.saturation, 1 - vertical))
-  }
-
-  return (
-    <div className="color-space-preview" aria-label="颜色的 HSV 位置">
-      <div ref={colorSpaceRef} className="color-space">
+    <div className="color-space-preview" aria-label={t('hsvPosition')}>
+      <div className="color-space" onPointerDown={(event) => startDrag(event, 'plane')}
+        onPointerMove={handlePointerMove} onPointerUp={finishDrag} onPointerCancel={finishDrag} onLostPointerCapture={finishDrag}>
         <svg className="color-space__line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="color-link-start" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor={config.start} />
-              <stop offset="1" stopColor={hasMiddle ? config.middle : config.end} />
-            </linearGradient>
-            <linearGradient id="color-link-end" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor={config.middle} />
-              <stop offset="1" stopColor={config.end} />
-            </linearGradient>
-          </defs>
-          <motion.line
-            animate={{
-              x1: start.x,
-              y1: start.y,
-              x2: hasMiddle ? middle.x : end.x,
-              y2: hasMiddle ? middle.y : end.y,
-            }}
-            transition={{ type: 'spring', stiffness: 240, damping: 28 }}
-            stroke="url(#color-link-start)"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          {hasMiddle && (
-            <motion.line
-              animate={{ x1: middle.x, y1: middle.y, x2: end.x, y2: end.y }}
-              transition={{ type: 'spring', stiffness: 240, damping: 28 }}
-              stroke="url(#color-link-end)"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
+          {points.slice(1).map((stop, index) => {
+            const from = points[index]
+            const id = `${gradientId}-${index}`
+            return (
+              <g key={`${from.id}-${stop.id}`}>
+                <defs>
+                  <linearGradient id={id} gradientUnits="userSpaceOnUse" x1={from.point.x} y1={from.point.y} x2={stop.point.x} y2={stop.point.y}>
+                    <stop offset="0" stopColor={from.color} /><stop offset="1" stopColor={stop.color} />
+                  </linearGradient>
+                </defs>
+                <line x1={from.point.x} y1={from.point.y} x2={stop.point.x} y2={stop.point.y}
+                  stroke={`url(#${id})`} strokeWidth="1.6" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+              </g>
+            )
+          })}
         </svg>
-        <PlaneMarker
-          point={start}
-          color={config.start}
-          label="拖动起始颜色"
-          onMove={(x, y) => updatePlane('start', start, x, y)}
-        />
-        {hasMiddle && (
-          <PlaneMarker
-            point={middle}
-            color={config.middle}
-            label="拖动中间颜色"
-            onMove={(x, y) => updatePlane('middle', middle, x, y)}
-          />
-        )}
-        <PlaneMarker
-          point={end}
-          color={config.end}
-          label="拖动结束颜色"
-          onMove={(x, y) => updatePlane('end', end, x, y)}
-        />
+        {points.map((stop, index) => (
+          <button key={stop.id} type="button" data-color-id={stop.id}
+            className={`color-space__marker${selected?.id === stop.id ? ' is-selected' : ''}`}
+            aria-label={t('indexedNodeColor', { index: index + 1 })} aria-pressed={selected?.id === stop.id}
+            style={{ left: `${stop.point.x}%`, top: `${stop.point.y}%`, backgroundColor: stop.color }}
+            onFocus={() => onSelect(stop.id)} onKeyDown={(event) => handlePlaneKey(event, stop.id, stop.point)} />
+        ))}
       </div>
-
-      <div ref={valueSpaceRef} className={`value-space${hasMiddle ? ' has-middle' : ''}`}>
-        <span style={{ background: `linear-gradient(to bottom, hsl(${start.hue} 100% 50%), #000)` }} />
-        {hasMiddle && (
-          <span style={{ background: `linear-gradient(to bottom, hsl(${middle.hue} 100% 50%), #000)` }} />
+      <div className="value-space" style={{ background: selected ? `linear-gradient(to bottom, ${hsvToHex(selected.point.hue, selected.point.saturation, 1)}, #000)` : '#181820' }}
+        onPointerDown={(event) => startDrag(event, 'value')}
+        onPointerMove={handlePointerMove} onPointerUp={finishDrag} onPointerCancel={finishDrag} onLostPointerCapture={finishDrag}>
+        {selected && (
+          <button type="button" className="value-space__marker" data-color-id={selected.id}
+            role="slider" aria-label={t('selectedNodeBrightness')} aria-orientation="vertical"
+            aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(selected.point.value * 100)}
+            style={{ top: `${(1 - selected.point.value) * 100}%`, backgroundColor: selected.color }}
+            onKeyDown={(event) => {
+              const step = event.shiftKey ? 0.1 : 0.01
+              const values: Record<string, number> = { ArrowUp: selected.point.value + step, ArrowDown: selected.point.value - step, Home: 0, End: 1 }
+              if (!(event.key in values)) return
+              event.preventDefault()
+              commitPoint(selected.id, { ...selected.point, value: Math.min(1, Math.max(0, values[event.key])) })
+            }} />
         )}
-        <span style={{ background: `linear-gradient(to bottom, hsl(${end.hue} 100% 50%), #000)` }} />
-        <ValueMarker
-          className="is-start"
-          point={start}
-          color={config.start}
-          label="拖动起始颜色明度"
-          onMove={(y) => updateValue('start', start, y)}
-        />
-        {hasMiddle && (
-          <ValueMarker
-            className="is-middle"
-            point={middle}
-            color={config.middle}
-            label="拖动中间颜色明度"
-            onMove={(y) => updateValue('middle', middle, y)}
-          />
-        )}
-        <ValueMarker
-          className="is-end"
-          point={end}
-          color={config.end}
-          label="拖动结束颜色明度"
-          onMove={(y) => updateValue('end', end, y)}
-        />
       </div>
     </div>
   )

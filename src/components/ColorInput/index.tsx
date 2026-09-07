@@ -1,4 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
+import { usePreferences } from '../../context/PreferencesContext'
 import { normalizeHex } from '../../utils/color'
 import './styles.css'
 
@@ -9,6 +10,7 @@ interface ColorInputProps {
 }
 
 export function ColorInput({ label, value, onChange }: ColorInputProps) {
+  const { t } = usePreferences()
   const [draft, setDraft] = useState(value)
 
   useEffect(() => setDraft(value), [value])
@@ -32,7 +34,7 @@ export function ColorInput({ label, value, onChange }: ColorInputProps) {
             type="color"
             value={value}
             onChange={(event) => onChange(event.target.value.toUpperCase())}
-            aria-label={`${label}色板`}
+            aria-label={t('colorPicker', { label })}
           />
         </span>
         <input
@@ -42,7 +44,7 @@ export function ColorInput({ label, value, onChange }: ColorInputProps) {
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commitDraft}
           onKeyDown={handleKeyDown}
-          aria-label={`${label}色值`}
+          aria-label={t('colorValue', { label })}
           spellCheck={false}
         />
       </span>

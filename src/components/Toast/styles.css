@@ -3,26 +3,30 @@
   z-index: 100;
   right: 24px;
   bottom: 24px;
+  max-width: calc(100vw - 48px);
   display: flex;
   align-items: center;
   gap: 9px;
   padding: 11px 14px;
-  border: 1px solid rgba(103, 232, 179, 0.19);
+  border: 1px solid var(--success-border, rgba(103, 232, 179, 0.19));
   border-radius: 11px;
-  color: #cafbe6;
-  background: rgba(20, 35, 29, 0.92);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.36);
+  color: var(--success-text, #cafbe6);
+  background: var(--toast-background, rgba(20, 35, 29, 0.92));
+  box-shadow: var(--toast-shadow, 0 14px 40px rgba(0, 0, 0, 0.36));
   backdrop-filter: blur(16px);
-  font-size: 11px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .app-toast svg {
-  color: #67e8b3;
+  flex-shrink: 0;
+  color: var(--success);
 }
 
 @media (max-width: 640px) {
   .app-toast {
     right: 16px;
     bottom: 16px;
+    max-width: calc(100vw - 32px);
   }
 }

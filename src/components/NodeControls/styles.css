@@ -1,0 +1,47 @@
+.node-controls {
+  display: grid;
+  grid-template-columns: minmax(95px, 1fr) minmax(120px, 1.3fr) auto;
+  gap: 9px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.node-select-field { display: grid; min-width: 0; gap: 7px; }
+.node-field-heading { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 13px; }
+.node-help { position: relative; display: flex; }
+.node-help-button {
+  display: grid; width: 20px; height: 20px; padding: 0; place-items: center;
+  border: 0; border-radius: 5px; color: var(--muted); background: transparent; cursor: help;
+}
+.node-help-button:hover, .node-help-button:focus-visible {
+  color: var(--control-hover-text, #e8ddff); background: var(--control-hover-background, #353543);
+}
+.node-help-button:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; }
+.node-help-tooltip {
+  position: absolute; z-index: 10; top: calc(100% + 7px); left: -32px;
+  width: 250px; max-width: calc(100vw - 80px); padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 9px;
+  color: var(--popover-text, #e7e2ef); background: var(--popover-background, #252330);
+  box-shadow: var(--popover-shadow, 0 8px 24px #0005);
+  font-size: 13px; line-height: 1.65;
+}
+.node-select-field select {
+  width: 100%; min-width: 0; height: 44px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--input-text, #d7d7df); background: var(--input-background, #181820); font-size: 14px;
+}
+.node-actions { display: flex; gap: 5px; }
+.node-actions button {
+  display: grid; width: 36px; height: 44px; place-items: center;
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--control-text, #d7d7df); background: var(--control-background, #22222b); cursor: pointer;
+}
+.node-actions button:hover:not(:disabled) { background: var(--control-hover-background, #353543); }
+.node-actions button:disabled, .node-select-field select:disabled { opacity: 0.35; cursor: not-allowed; }
+
+@media (max-width: 400px) {
+  .node-controls { gap: 10px; grid-template-columns: minmax(0, 1fr) auto; }
+  .node-select-field { grid-column: 1 / -1; }
+  .node-actions { gap: 4px; }
+  .node-actions button { width: 36px; height: 44px; }
+}

@@ -1,11 +1,18 @@
 export type GradientMode = 'linear' | 'three' | 'rainbow' | 'mirror' | 'offset'
 
+export interface GradientStop {
+  id: string
+  color: string
+  position: number
+}
+
 export interface GradientConfig {
   mode: GradientMode
   start: string
   middle: string
   middlePosition: number
   end: string
+  nodes?: GradientStop[]
 }
 
 export interface ArtPreset {

@@ -1,5 +1,6 @@
-import { useRef, type ChangeEvent, type KeyboardEvent } from 'react'
+import { memo, useMemo, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
 import { FileText } from 'lucide-react'
+import { usePreferences } from '../../context/PreferencesContext'
 import { getVisibleCharacters, wrapSelection } from '../../utils/bbcode'
 import { EditorToolbar, type FormatAction } from '../EditorToolbar'
 import './styles.css'
@@ -9,11 +10,12 @@ interface EditorPanelProps {
   onChange: (value: string) => void
 }
 
-export function EditorPanel({ value, onChange }: EditorPanelProps) {
+export const EditorPanel = memo(function EditorPanel({ value, onChange }: EditorPanelProps) {
+  const { t } = usePreferences()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const visibleCount = getVisibleCharacters(value).length
+  const visibleCount = useMemo(() => getVisibleCharacters(value).length, [value])
 
-  const applyFormat = ({ openTag, closeTag, placeholder }: FormatAction) => {
+  const applyFormat = ({ openTag, closeTag, placeholder = t('text') }: FormatAction) => {
     const textarea = textareaRef.current
     if (!textarea) return
 
@@ -51,11 +53,11 @@ export function EditorPanel({ value, onChange }: EditorPanelProps) {
     <section className="editor-card surface-card" aria-labelledby="editor-title">
       <div className="section-heading editor-heading">
         <div>
-          <h2 id="editor-title">编辑内容</h2>
+          <h2 id="editor-title">{t('editContent')}</h2>
         </div>
         <span className="character-count">
           <FileText size={13} />
-          {visibleCount} 字
+          {t('characterCount', { count: visibleCount })}
         </span>
       </div>
 
@@ -68,10 +70,10 @@ export function EditorPanel({ value, onChange }: EditorPanelProps) {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           spellCheck={false}
-          aria-label="BBCode 内容"
-          placeholder="输入文字，或使用工具栏添加格式…"
+          aria-label={t('bbcodeContent')}
+          placeholder={t('editorPlaceholder')}
         />
       </div>
     </section>
   )
-}
+})

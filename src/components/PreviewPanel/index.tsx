@@ -1,20 +1,27 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, Code2, Copy, Eye } from 'lucide-react'
 import clsx from 'clsx'
+import { usePreferences } from '../../context/PreferencesContext'
 import { renderBbcode } from '../../utils/bbcode'
 import './styles.css'
 
 interface PreviewPanelProps {
   output: string
   onCopied: () => void
+  getCopyOutput: () => string
 }
 
 type PreviewTab = 'preview' | 'code'
 
-export function PreviewPanel({ output, onCopied }: PreviewPanelProps) {
+export const PreviewPanel = memo(function PreviewPanel({ output, onCopied, getCopyOutput }: PreviewPanelProps) {
+  const { t } = usePreferences()
   const [activeTab, setActiveTab] = useState<PreviewTab>('preview')
   const [copied, setCopied] = useState(false)
+  const renderedOutput = useMemo(
+    () => activeTab === 'preview' && output ? renderBbcode(output) : null,
+    [activeTab, output],
+  )
 
   useEffect(() => {
     if (!copied) return
@@ -23,11 +30,12 @@ export function PreviewPanel({ output, onCopied }: PreviewPanelProps) {
   }, [copied])
 
   const copyOutput = async () => {
+    const latestOutput = getCopyOutput()
     try {
-      await navigator.clipboard.writeText(output)
+      await navigator.clipboard.writeText(latestOutput)
     } catch {
       const textarea = document.createElement('textarea')
-      textarea.value = output
+      textarea.value = latestOutput
       textarea.style.position = 'fixed'
       textarea.style.opacity = '0'
       document.body.appendChild(textarea)
@@ -43,15 +51,15 @@ export function PreviewPanel({ output, onCopied }: PreviewPanelProps) {
     <aside className="preview-card surface-card" aria-labelledby="preview-title">
       <div className="preview-card__head">
         <div>
-          <h2 id="preview-title">实时结果</h2>
+          <h2 id="preview-title">{t('liveResult')}</h2>
         </div>
         <button className={clsx('copy-button', copied && 'is-copied')} type="button" onClick={copyOutput}>
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          <span>{copied ? '已复制' : '复制代码'}</span>
+          <span>{copied ? t('copyDone') : t('copyCode')}</span>
         </button>
       </div>
 
-      <div className="preview-tabs" role="tablist" aria-label="结果视图">
+      <div className="preview-tabs" role="tablist" aria-label={t('resultView')}>
         <button
           type="button"
           role="tab"
@@ -60,7 +68,7 @@ export function PreviewPanel({ output, onCopied }: PreviewPanelProps) {
           onClick={() => setActiveTab('preview')}
         >
           <Eye size={14} />
-          预览
+          {t('preview')}
         </button>
         <button
           type="button"
@@ -88,7 +96,7 @@ export function PreviewPanel({ output, onCopied }: PreviewPanelProps) {
               <div className="forum-post">
                 <div className="forum-post__content">
                   <div className="rendered-bbcode">
-                    {output ? renderBbcode(output) : <span className="empty-preview">预览将在这里显示</span>}
+                    {renderedOutput ?? <span className="empty-preview">{t('emptyPreview')}</span>}
                   </div>
                 </div>
               </div>
@@ -102,11 +110,11 @@ export function PreviewPanel({ output, onCopied }: PreviewPanelProps) {
               transition={{ duration: 0.18 }}
               className="code-output-wrap"
             >
-              <textarea className="code-output" value={output} readOnly spellCheck={false} aria-label="生成的 BBCode" />
+              <textarea className="code-output" value={output} readOnly spellCheck={false} aria-label={t('generatedBbcode')} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
     </aside>
   )
-}
+})

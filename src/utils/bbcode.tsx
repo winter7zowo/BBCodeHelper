@@ -3,6 +3,11 @@ import type { BbcodeNode, GradientConfig } from '../types/editor'
 import { generateGradientColors } from './color'
 
 const TAG_PATTERN = /(\[[^\]\n]+\])/g
+// Preview the text-formatting tags used by osu!, keeping other markup visible.
+const PREVIEW_TAGS = new Set([
+  'b', 'i', 'u', 's', 'strike', 'color', 'size', 'url', 'quote',
+  'centre', 'left', 'right', 'notice', 'heading', 'list', '*',
+])
 
 function toGraphemes(value: string): string[] {
   const Segmenter = (Intl as unknown as {
@@ -62,6 +67,27 @@ export function wrapSelection(
   const hasSelection = end > start
   const selected = value.slice(start, end)
 
+  // osu! headings cannot span lines, so keep one tag pair per non-empty line.
+  if (openTag === '[heading]' && closeTag === '[/heading]' && /[\r\n]/.test(selected)) {
+    const lines = selected.split(/(\r\n|\r|\n)/)
+    const contentLines = lines.filter((line, index) => index % 2 === 0 && line.trim().length > 0)
+    const unwrap = contentLines.every((line) => line.startsWith(openTag) && line.endsWith(closeTag))
+    // Existing tags may span lines; a size wrapper preserves their nesting.
+    if (!unwrap && selected.split(TAG_PATTERN).some(isTag)) {
+      return wrapSelection(value, start, end, '[size=150]', '[/size]', placeholder)
+    }
+    const replacement = lines.map((line, index) => {
+      if (index % 2 !== 0 || !line.trim()) return line
+      return unwrap ? line.slice(openTag.length, -closeTag.length) : `${openTag}${line}${closeTag}`
+    }).join('')
+
+    return {
+      value: `${value.slice(0, start)}${replacement}${value.slice(end)}`,
+      selectionStart: start,
+      selectionEnd: start + replacement.length,
+    }
+  }
+
   if (hasSelection && selected.startsWith(openTag) && selected.endsWith(closeTag)) {
     const innerText = selected.slice(openTag.length, -closeTag.length)
     return {
@@ -97,12 +123,20 @@ export function wrapSelection(
   }
 }
 
+function hasHeadingCloseOnSameLine(tokens: string[], start: number): boolean {
+  for (let index = start + 1; index < tokens.length; index += 1) {
+    if (/[\r\n]/.test(tokens[index])) return false
+    if (/^\[\/heading\]$/i.test(tokens[index])) return true
+  }
+  return false
+}
+
 export function parseBbcode(value: string): Array<BbcodeNode | string> {
   const root: BbcodeNode = { tag: 'root', children: [] }
   const stack: BbcodeNode[] = [root]
   const tokens = value.split(TAG_PATTERN)
 
-  tokens.forEach((token) => {
+  tokens.forEach((token, tokenIndex) => {
     const match = token.match(/^\[(\/)?(\*|[a-z][a-z0-9]*)(?:=([^\]]+))?\]$/i)
     if (!match) {
       stack[stack.length - 1]?.children.push(token)
@@ -112,11 +146,30 @@ export function parseBbcode(value: string): Array<BbcodeNode | string> {
     const [, closing, rawTag, attr] = match
     const tag = rawTag.toLowerCase()
 
+    if (!PREVIEW_TAGS.has(tag) || (!closing && (
+      (tag === 'notice' && attr !== undefined) ||
+      (tag === 'heading' && (attr !== undefined || !hasHeadingCloseOnSameLine(tokens, tokenIndex))) ||
+      (tag === 'size' && !/^\d+$/.test(attr ?? ''))
+    ))) {
+      stack[stack.length - 1]?.children.push(token)
+      return
+    }
+
     if (closing) {
       const matchingIndex = stack.map((node) => node.tag).lastIndexOf(tag)
       if (matchingIndex > 0) stack.splice(matchingIndex)
       else stack[stack.length - 1]?.children.push(token)
       return
+    }
+
+    // osu! list items end implicitly at the next [*] in the same list.
+    if (tag === '*') {
+      const listIndex = stack.map((node) => node.tag).lastIndexOf('list')
+      if (listIndex === -1) {
+        stack[stack.length - 1]?.children.push(token)
+        return
+      }
+      stack.splice(listIndex + 1)
     }
 
     const node: BbcodeNode = { tag, attr, children: [] }
@@ -125,16 +178,6 @@ export function parseBbcode(value: string): Array<BbcodeNode | string> {
   })
 
   return root.children
-}
-
-const FONT_SIZES: Record<string, string> = {
-  '1': '0.75em',
-  '2': '0.875em',
-  '3': '1em',
-  '4': '1.25em',
-  '5': '1.5em',
-  '6': '1.875em',
-  '7': '2.25em',
 }
 
 function renderNode(node: BbcodeNode | string, key: string): ReactNode {
@@ -152,15 +195,13 @@ function renderNode(node: BbcodeNode | string, key: string): ReactNode {
     case 'u':
       return createElement('u', props, children)
     case 's':
+    case 'strike':
       return createElement('s', props, children)
     case 'color':
       props.style = { color: /^#[\da-f]{3,8}$/i.test(safeAttr ?? '') ? safeAttr : undefined }
       return createElement('span', props, children)
     case 'size':
-      props.style = { fontSize: FONT_SIZES[safeAttr ?? ''] ?? safeAttr }
-      return createElement('span', props, children)
-    case 'font':
-      props.style = { fontFamily: safeAttr }
+      props.style = { fontSize: `${Math.min(200, Math.max(30, Number(safeAttr)))}%` }
       return createElement('span', props, children)
     case 'url':
       props.href = /^https?:\/\//i.test(safeAttr ?? '') ? safeAttr : undefined
@@ -169,66 +210,21 @@ function renderNode(node: BbcodeNode | string, key: string): ReactNode {
       return createElement('a', props, children)
     case 'quote':
       return createElement('blockquote', props, children)
-    case 'center':
+    case 'centre':
     case 'left':
     case 'right':
-      props.style = { textAlign: node.tag as CSSProperties['textAlign'] }
+      props.style = { textAlign: node.tag === 'centre' ? 'center' : node.tag as CSSProperties['textAlign'] }
       props.className = 'bbcode-align'
       return createElement('div', props, children)
-    case 'align': {
-      const alignment = ['left', 'center', 'right', 'justify'].includes(safeAttr ?? '')
-        ? safeAttr as CSSProperties['textAlign']
-        : 'left'
-      props.style = { textAlign: alignment }
-      props.className = 'bbcode-align'
-      return createElement('div', props, children)
-    }
     case 'notice':
-    case 'alert': {
-      const variants = ['info', 'success', 'warning', 'error']
-      const meaningfulChildren = node.children.filter(
-        (child) => typeof child !== 'string' || child.trim().length > 0,
-      )
-      const nestedNotice =
-        meaningfulChildren.length === 1 &&
-        typeof meaningfulChildren[0] !== 'string' &&
-        ['notice', 'alert'].includes(meaningfulChildren[0].tag)
-          ? meaningfulChildren[0]
-          : null
-      const attributes = [node.attr, nestedNotice?.attr].filter(Boolean) as string[]
-      let kind = 'info'
-      let title = ''
-
-      attributes.forEach((attribute) => {
-        const [first, ...rest] = attribute.split('|')
-        if (variants.includes(first.toLowerCase())) {
-          kind = first.toLowerCase()
-          if (rest.length) title = rest.join('|')
-        } else {
-          title = attribute
-        }
-      })
-
-      const noticeSource = nestedNotice?.children ?? node.children
-      const noticeBody = noticeSource.map((child, index) =>
-        renderNode(child, `${key}-notice-${index}`),
-      )
-      const noticeContent = title
-        ? [
-            createElement('strong', { key: `${key}-title`, className: 'bbcode-notice__title' }, title),
-            createElement('div', { key: `${key}-body`, className: 'bbcode-notice__body' }, noticeBody),
-          ]
-        : noticeBody
-
-      props.className = `bbcode-notice bbcode-notice--${kind}`
-      return createElement('div', props, noticeContent)
-    }
-    case 'h1':
-    case 'h2':
-    case 'h3':
-      return createElement(node.tag, props, children)
+      props.className = 'bbcode-notice'
+      return createElement('div', props, children)
+    case 'heading':
+      return createElement('h2', props, children)
     case 'list':
-      return createElement(safeAttr === '1' ? 'ol' : 'ul', props, children)
+      return createElement(safeAttr ? 'ol' : 'ul', props, children.filter(
+        (child) => typeof child !== 'string' || child.trim().length > 0,
+      ))
     case '*':
       return createElement('li', props, children)
     default:

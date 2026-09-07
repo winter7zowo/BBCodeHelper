@@ -1,18 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { EditorPanel } from './components/EditorPanel'
 import { GradientPanel } from './components/GradientPanel'
 import { Header } from './components/Header'
 import { PreviewPanel } from './components/PreviewPanel'
 import { Toast } from './components/Toast'
+import { SettingsPanel } from './components/SettingsPanel'
+import { usePreferences } from './context/PreferencesContext'
+import type { TranslationKey } from './i18n'
+import { useDebouncedStorage } from './hooks/useDebouncedStorage'
 import type { ArtPreset, GradientConfig } from './types/editor'
-import { applyGradientToBbcode } from './utils/bbcode'
+import { applyGradientToBbcode, getVisibleCharacters } from './utils/bbcode'
+import { normalizeHex } from './utils/color'
+import { getOffsetNodes, limitNodes, normalizeNodes } from './utils/gradientNodes'
 import './App.css'
 
 const DEFAULT_SOURCE = `This is the sample text.`
 
 const DEFAULT_CONFIG: GradientConfig = {
-  mode: 'three',
+  mode: 'linear',
   start: '#8B5CF6',
   middle: '#22D3EE',
   middlePosition: 50,
@@ -21,44 +27,82 @@ const DEFAULT_CONFIG: GradientConfig = {
 
 const STORAGE_KEY = 'chromacode-state-v2'
 
-type StoredEditorState = {
-  source?: string
-  config?: Omit<Partial<GradientConfig>, 'mode'> & {
-    mode?: GradientConfig['mode'] | 'alternate'
-  }
-  preset?: string | null
+interface EditorState {
+  source: string
+  config: GradientConfig
+  preset: string | null
 }
 
-function loadStoredState() {
+function constrainNodes(config: GradientConfig, maxNodes: number): GradientConfig {
+  if (config.mode !== 'offset' && config.nodes === undefined) return config
+  const nodes = config.nodes ?? getOffsetNodes(config)
+  if (maxNodes > 0 && nodes.length === 0) {
+    return { ...config, nodes: [{ id: 'start', color: config.start, position: 0 }] }
+  }
+  if (config.nodes === nodes && nodes.length <= maxNodes) return config
+  return { ...config, nodes: limitNodes(nodes, maxNodes) }
+}
+
+function loadStoredState(): EditorState {
+  const defaults: EditorState = {
+    source: DEFAULT_SOURCE,
+    config: DEFAULT_CONFIG,
+    preset: null,
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as StoredEditorState
+    if (!raw) return defaults
+    const stored: unknown = JSON.parse(raw)
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return defaults
+    const saved = stored as Record<string, unknown>
+    const source = typeof saved.source === 'string' ? saved.source : DEFAULT_SOURCE
+    const rawConfig = saved.config && typeof saved.config === 'object' && !Array.isArray(saved.config)
+      ? saved.config as Record<string, unknown>
+      : {}
+    const savedColor = (key: 'start' | 'middle' | 'end') => typeof rawConfig[key] === 'string'
+      ? normalizeHex(rawConfig[key], DEFAULT_CONFIG[key])
+      : DEFAULT_CONFIG[key]
+    const config: GradientConfig = {
+      // Every new visit opens the two-colour tab, including saved drafts.
+      mode: DEFAULT_CONFIG.mode,
+      start: savedColor('start'),
+      middle: savedColor('middle'),
+      end: savedColor('end'),
+      middlePosition: typeof rawConfig.middlePosition === 'number' && Number.isFinite(rawConfig.middlePosition)
+        ? Math.min(95, Math.max(5, rawConfig.middlePosition))
+        : DEFAULT_CONFIG.middlePosition,
+      ...(Array.isArray(rawConfig.nodes) ? { nodes: normalizeNodes(rawConfig.nodes) } : {}),
+    }
+    return {
+      source,
+      config: constrainNodes(config, getVisibleCharacters(source).length),
+      preset: null,
+    }
   } catch {
-    return null
+    return defaults
   }
 }
 
 function App() {
-  const stored = useMemo(loadStoredState, [])
-  const [source, setSource] = useState(stored?.source ?? DEFAULT_SOURCE)
-  const [config, setConfig] = useState<GradientConfig>(() => ({
-    ...DEFAULT_CONFIG,
-    ...stored?.config,
-    mode: stored?.config?.mode === 'alternate' ? 'offset' : (stored?.config?.mode ?? DEFAULT_CONFIG.mode),
-    middlePosition: stored?.config?.middlePosition ?? DEFAULT_CONFIG.middlePosition,
-  }))
-  const [activePreset, setActivePreset] = useState<string | null>(stored?.preset ?? 'aurora')
-  const [toast, setToast] = useState<string | null>(null)
+  const { t } = usePreferences()
+  const [editor, setEditor] = useState<EditorState>(loadStoredState)
+  const { source, config, preset: activePreset } = editor
+  const [toast, setToast] = useState<TranslationKey | null>(null)
+  const maxNodes = useMemo(() => getVisibleCharacters(source).length, [source])
+  const previewInput = useMemo(() => ({ source, config }), [source, config])
+  const deferredPreview = useDeferredValue(previewInput)
+  const output = useMemo(
+    () => applyGradientToBbcode(deferredPreview.source, deferredPreview.config),
+    [deferredPreview],
+  )
+  const latestInput = useRef(previewInput)
 
-  const output = useMemo(() => applyGradientToBbcode(source, config), [source, config])
+  useLayoutEffect(() => {
+    latestInput.current = previewInput
+  }, [previewInput])
 
-  useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ source, config, preset: activePreset }),
-    )
-  }, [source, config, activePreset])
+  useDebouncedStorage(STORAGE_KEY, editor)
 
   useEffect(() => {
     if (!toast) return
@@ -66,28 +110,47 @@ function App() {
     return () => window.clearTimeout(timeout)
   }, [toast])
 
-  const handleConfigChange = (nextConfig: GradientConfig) => {
-    setConfig(nextConfig)
-    setActivePreset(null)
-  }
+  const handleSourceChange = useCallback((nextSource: string) => {
+    const nextMaxNodes = getVisibleCharacters(nextSource).length
+    setEditor((current) => ({
+      ...current,
+      source: nextSource,
+      config: constrainNodes(current.config, nextMaxNodes),
+    }))
+  }, [])
 
-  const handlePreset = (preset: ArtPreset) => {
-    setConfig({
-      mode: preset.mode,
-      start: preset.colors[0],
-      middle: preset.colors[1],
-      middlePosition: 50,
-      end: preset.colors[2],
-    })
-    setActivePreset(preset.id)
-  }
+  const handleConfigChange = useCallback((nextConfig: GradientConfig) => {
+    setEditor((current) => ({
+      ...current,
+      config: constrainNodes(nextConfig, maxNodes),
+      preset: null,
+    }))
+  }, [maxNodes])
 
-  const resetEditor = () => {
-    setSource(DEFAULT_SOURCE)
-    setConfig(DEFAULT_CONFIG)
-    setActivePreset('aurora')
-    setToast('已重置')
-  }
+  const handlePreset = useCallback((preset: ArtPreset) => {
+    setEditor((current) => ({
+      ...current,
+      config: constrainNodes({
+        mode: preset.mode,
+        start: preset.colors[0],
+        middle: preset.colors[1],
+        middlePosition: 50,
+        end: preset.colors[2],
+      }, maxNodes),
+      preset: preset.id,
+    }))
+  }, [maxNodes])
+
+  const resetEditor = useCallback(() => {
+    setEditor({ source: DEFAULT_SOURCE, config: DEFAULT_CONFIG, preset: null })
+    setToast('resetDone')
+  }, [])
+
+  const handleCopied = useCallback(() => setToast('copied'), [])
+  const getCopyOutput = useCallback(() => {
+    const latest = latestInput.current
+    return applyGradientToBbcode(latest.source, latest.config)
+  }, [])
 
   return (
     <div className="app min-h-screen">
@@ -100,9 +163,10 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.42, delay: 0.06 }}
           >
-            <EditorPanel value={source} onChange={setSource} />
+            <EditorPanel value={source} onChange={handleSourceChange} />
             <GradientPanel
               config={config}
+              maxNodes={maxNodes}
               activePreset={activePreset}
               onChange={handleConfigChange}
               onPreset={handlePreset}
@@ -117,12 +181,14 @@ function App() {
           >
             <PreviewPanel
               output={output}
-              onCopied={() => setToast('BBCode 已复制')}
+              onCopied={handleCopied}
+              getCopyOutput={getCopyOutput}
             />
           </motion.div>
         </div>
       </main>
-      <Toast message={toast} />
+      <Toast message={toast ? t(toast) : null} />
+      <SettingsPanel />
     </div>
   )
 }

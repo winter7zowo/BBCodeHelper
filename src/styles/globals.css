@@ -4,8 +4,11 @@
 
 :root {
   font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  color: #f4f4f6;
-  background: #09090d;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--page-text, #f4f4f6);
+  background: var(--bg);
+  color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --bg: #09090d;
@@ -20,6 +23,62 @@
   --accent: #8b5cf6;
   --accent-bright: #a78bfa;
   --success: #67e8b3;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f2f8;
+  --surface: rgba(255, 255, 255, 0.94);
+  --surface-strong: #ffffff;
+  --surface-soft: #f2eef8;
+  --border: rgba(65, 48, 96, 0.13);
+  --border-strong: rgba(65, 48, 96, 0.23);
+  --text: #292335;
+  --page-text: #292335;
+  --muted: #6f677d;
+  --muted-strong: #574d68;
+  --accent: #7540ce;
+  --accent-bright: #6b36c3;
+  --success: #167c50;
+  --card-background: linear-gradient(145deg, #ffffff, #fdfcfe);
+  --card-shadow: 0 16px 45px rgba(51, 34, 84, 0.07);
+  --header-background: rgba(249, 247, 252, 0.9);
+  --page-glow-purple: rgba(108, 68, 218, 0.055);
+  --page-glow-blue: rgba(59, 130, 246, 0.025);
+  --scrollbar-thumb: rgba(72, 56, 99, 0.25);
+  --focus-ring: rgba(117, 64, 206, 0.75);
+  --selection-background: #7540ce;
+  --input-background: #ffffff;
+  --input-text: #383044;
+  --placeholder-text: #787080;
+  --control-background: #ffffff;
+  --control-text: #544b65;
+  --control-hover-background: #eee8f8;
+  --control-hover-text: #542ca1;
+  --inset-background: #f3f0f8;
+  --active-background: #eae2f8;
+  --active-text: #5726a7;
+  --active-shadow: 0 2px 7px rgba(75, 47, 112, 0.08);
+  --accent-soft-background: rgba(117, 64, 206, 0.08);
+  --accent-hover-background: rgba(117, 64, 206, 0.14);
+  --accent-text: #6835b8;
+  --accent-border: rgba(117, 64, 206, 0.25);
+  --content-background: #ffffff;
+  --content-text: #3d344b;
+  --quote-text: #665a76;
+  --notice-background: #f5f1f9;
+  --code-background: #faf8fd;
+  --code-text: #595069;
+  --popover-background: #ffffff;
+  --popover-text: #44364f;
+  --popover-shadow: 0 8px 24px rgba(44, 28, 68, 0.14);
+  --swatch-border: rgba(53, 40, 72, 0.2);
+  --swatch-shadow: 0 2px 7px rgba(48, 30, 76, 0.12);
+  --success-background: #e8f6ef;
+  --success-border: rgba(22, 124, 80, 0.23);
+  --success-text: #146d47;
+  --toast-background: rgba(239, 250, 245, 0.97);
+  --toast-shadow: 0 14px 40px rgba(28, 77, 50, 0.14);
 }
 
 * {
@@ -37,8 +96,8 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 78% -10%, rgba(108, 68, 218, 0.14), transparent 32%),
-    radial-gradient(circle at 2% 45%, rgba(59, 130, 246, 0.07), transparent 26%),
+    radial-gradient(circle at 78% -10%, var(--page-glow-purple, rgba(108, 68, 218, 0.14)), transparent 32%),
+    radial-gradient(circle at 2% 45%, var(--page-glow-blue, rgba(59, 130, 246, 0.07)), transparent 26%),
     var(--bg);
 }
 
@@ -57,13 +116,13 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid rgba(167, 139, 250, 0.8);
+  outline: 2px solid var(--focus-ring, rgba(167, 139, 250, 0.8));
   outline-offset: 2px;
 }
 
 ::selection {
   color: white;
-  background: rgba(124, 92, 246, 0.5);
+  background: var(--selection-background, rgba(124, 92, 246, 0.5));
 }
 
 ::-webkit-scrollbar {
@@ -78,7 +137,7 @@ select:focus-visible {
 ::-webkit-scrollbar-thumb {
   border: 3px solid transparent;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.17);
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.17));
   background-clip: padding-box;
 }
 
@@ -97,7 +156,7 @@ select:focus-visible {
 .surface-card {
   border: 1px solid var(--border);
   border-radius: 18px;
-  background: linear-gradient(145deg, rgba(25, 25, 34, 0.94), rgba(15, 15, 21, 0.92));
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.2);
+  background: var(--card-background, linear-gradient(145deg, rgba(25, 25, 34, 0.94), rgba(15, 15, 21, 0.92)));
+  box-shadow: var(--card-shadow, 0 22px 70px rgba(0, 0, 0, 0.2));
   backdrop-filter: blur(20px);
 }
