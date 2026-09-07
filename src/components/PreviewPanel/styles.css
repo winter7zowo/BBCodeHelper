@@ -116,7 +116,7 @@
   overflow-wrap: anywhere;
   color: var(--content-text, #d4d4dc);
   font-size: 16px;
-  line-height: 1.8;
+  line-height: 1.5;
   white-space: pre-wrap;
 }
 
@@ -126,11 +126,11 @@
 }
 
 .rendered-bbcode h2 {
-  margin: 0 0 10px;
-  line-height: 1.25;
+  margin: 10px 0 0;
+  line-height: 1.1;
   color: #ff66aa;
   font-size: 1.5em;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .rendered-bbcode blockquote {
@@ -142,9 +142,12 @@
 }
 
 .rendered-bbcode a {
-  text-decoration: underline;
+  color: var(--bbcode-link, #8ed6f4);
+  text-decoration: none;
   text-underline-offset: 3px;
 }
+
+.rendered-bbcode a:hover { text-decoration: underline; }
 
 .rendered-bbcode ul,
 .rendered-bbcode ol {
@@ -158,11 +161,38 @@
 .rendered-bbcode .bbcode-notice {
   display: block;
   width: 100%;
-  margin: 8px 0;
-  padding: 10px 12px;
-  border: 2px solid #ff66aa;
-  background: var(--notice-background, rgba(0, 0, 0, 0.3));
+  margin: 0;
+  padding: 24px;
+  border: 2px solid var(--notice-border, #596a70);
+  border-radius: 5px;
+  background: var(--notice-background, #22292b);
 }
+
+.rendered-bbcode img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+.rendered-bbcode code {
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--inset-background, #ffffff12);
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.rendered-bbcode pre {
+  max-width: 100%;
+  margin: 8px 0;
+  padding: 14px;
+  overflow: auto;
+  border-radius: 5px;
+  background: var(--inset-background, #ffffff0c);
+  white-space: pre;
+}
+
+.rendered-bbcode pre code { padding: 0; background: transparent; }
 
 .empty-preview {
   color: var(--placeholder-text, #555561);
@@ -201,6 +231,8 @@
 }
 
 @media (max-width: 640px) {
+  .rendered-bbcode .bbcode-notice { padding: 18px; }
+
   .preview-card {
     height: 520px;
     min-height: 520px;

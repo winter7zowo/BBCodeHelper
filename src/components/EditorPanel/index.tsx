@@ -1,7 +1,8 @@
 import { memo, useMemo, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
 import { FileText } from 'lucide-react'
 import { usePreferences } from '../../context/PreferencesContext'
-import { getVisibleCharacters, wrapSelection } from '../../utils/bbcode'
+import { getVisibleCharacters } from '../../utils/bbcode'
+import { wrapSelection } from '../../utils/editorActions'
 import { EditorToolbar, type FormatAction } from '../EditorToolbar'
 import './styles.css'
 
@@ -15,27 +16,45 @@ export const EditorPanel = memo(function EditorPanel({ value, onChange }: Editor
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const visibleCount = useMemo(() => getVisibleCharacters(value).length, [value])
 
-  const applyFormat = ({ openTag, closeTag, placeholder = t('text') }: FormatAction) => {
+  const applyFormat = ({ openTag, closeTag }: FormatAction) => {
     const textarea = textareaRef.current
     if (!textarea) return
 
+    const currentValue = textarea.value
+    const scrollTop = textarea.scrollTop
     const result = wrapSelection(
-      value,
+      currentValue,
       textarea.selectionStart,
       textarea.selectionEnd,
       openTag,
       closeTag,
-      placeholder,
     )
+
+    // Replace only the changed range through the browser's editing command,
+    // so formatting is one native undo step alongside normal typing.
+    let start = 0
+    let suffix = 0
+    while (start < currentValue.length && start < result.value.length && currentValue[start] === result.value[start]) start++
+    while (suffix < currentValue.length - start && suffix < result.value.length - start &&
+      currentValue[currentValue.length - suffix - 1] === result.value[result.value.length - suffix - 1]) suffix++
+    const replacement = result.value.slice(start, result.value.length - suffix)
+    textarea.focus({ preventScroll: true })
+    textarea.setSelectionRange(start, currentValue.length - suffix)
+    try { document.execCommand('insertText', false, replacement) }
+    catch { /* Fall back to standard textarea editing when this command is unavailable. */ }
+    if (textarea.value !== result.value) {
+      textarea.setRangeText(result.value, 0, textarea.value.length, 'end')
+    }
     onChange(result.value)
     requestAnimationFrame(() => {
-      textarea.focus()
+      textarea.focus({ preventScroll: true })
       textarea.setSelectionRange(result.selectionStart, result.selectionEnd)
+      textarea.scrollTop = scrollTop
     })
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!(event.ctrlKey || event.metaKey)) return
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.nativeEvent.isComposing) return
     const shortcut = event.key.toLowerCase()
     const actions: Record<string, FormatAction> = {
       b: { openTag: '[b]', closeTag: '[/b]' },

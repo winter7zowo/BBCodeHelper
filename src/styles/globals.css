@@ -66,7 +66,9 @@ html[data-theme='light'] {
   --content-background: #ffffff;
   --content-text: #3d344b;
   --quote-text: #665a76;
-  --notice-background: #f5f1f9;
+  --notice-background: #f2f5f6;
+  --notice-border: #a6b4ba;
+  --bbcode-link: #196781;
   --code-background: #faf8fd;
   --code-text: #595069;
   --popover-background: #ffffff;

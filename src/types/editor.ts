@@ -25,5 +25,6 @@ export interface ArtPreset {
 export interface BbcodeNode {
   tag: string
   attr?: string
+  raw?: string
   children: Array<BbcodeNode | string>
 }

@@ -19,7 +19,6 @@ import './styles.css'
 export interface FormatAction {
   openTag: string
   closeTag: string
-  placeholder?: string
 }
 
 interface EditorToolbarProps {
@@ -49,7 +48,8 @@ function ToolButton({
   onClick: () => void
 }) {
   return (
-    <button className="tool-button" type="button" aria-label={label} title={label} onClick={onClick}>
+    <button className="tool-button" type="button" aria-label={label} title={label}
+      onMouseDown={(event) => { if (event.button === 0) event.preventDefault() }} onClick={onClick}>
       <Icon size={18} strokeWidth={2} />
     </button>
   )
@@ -57,12 +57,11 @@ function ToolButton({
 
 export function EditorToolbar({ onFormat }: EditorToolbarProps) {
   const { t } = usePreferences()
-  const run = (openTag: string, closeTag: string, placeholder?: string) =>
-    onFormat({ openTag, closeTag, placeholder })
+  const run = (openTag: string, closeTag: string) => onFormat({ openTag, closeTag })
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label={t('textFormatting')}>
-      <ToolButton label={t('heading')} icon={Heading} onClick={() => run('[heading]', '[/heading]', t('heading'))} />
+      <ToolButton label={t('heading')} icon={Heading} onClick={() => run('[heading]', '[/heading]')} />
 
       <select
         className="toolbar-select size-select"
@@ -97,26 +96,26 @@ export function EditorToolbar({ onFormat }: EditorToolbarProps) {
         />
       ))}
       <span className="tool-divider" />
-      <ToolButton label={t('quote')} icon={Quote} onClick={() => run('[quote]', '[/quote]', t('quoteContent'))} />
+      <ToolButton label={t('quote')} icon={Quote} onClick={() => run('[quote]', '[/quote]')} />
       <ToolButton
         label={t('notice')}
         icon={CircleAlert}
-        onClick={() => run('[notice]', '[/notice]', t('noticeContent'))}
+        onClick={() => run('[notice]', '[/notice]')}
       />
       <ToolButton
         label={t('link')}
         icon={Link2}
-        onClick={() => run('[url=https://example.com]', '[/url]', t('linkText'))}
+        onClick={() => run('[url]', '[/url]')}
       />
       <ToolButton
         label={t('unorderedList')}
         icon={List}
-        onClick={() => run('[list]\n[*]', `\n[*]${t('secondListItem')}\n[/list]`, t('firstListItem'))}
+        onClick={() => run('[list]\n[*]', '[/list]')}
       />
       <ToolButton
         label={t('orderedList')}
         icon={ListOrdered}
-        onClick={() => run('[list=1]\n[*]', `\n[*]${t('secondListItem')}\n[/list]`, t('firstListItem'))}
+        onClick={() => run('[list=1]\n[*]', '[/list]')}
       />
     </div>
   )
